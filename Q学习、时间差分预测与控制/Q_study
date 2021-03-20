@@ -1,0 +1,52 @@
+
+import  gym
+import random
+
+render= True
+env = gym.make('Taxi-v3')
+env.render()
+
+
+ALPHA = 0.4
+GAMMA = 0.999
+EPSILON = 0.017
+
+# 初始化一个Q表,其中包括一个将状态——行为值对保存（state,action）
+q = {}
+for s in range(env.observation_space.n):
+    for a in  range(env.action_space.n):
+        q[(s,a)] = 0.0
+
+#通过Q学习更新规则来定义更新Q表
+# 观察下面函数，会发现是选择对于状态——行为对具有最大值的行为，并将其保存到qa变量中，
+def update_q_table(prev_state, action, reward, nextstate, ALPHA, GAMMA):
+    qa = max([q[(nextstate, a)] for a in range(env.action_space.n)])
+    q[(prev_state,action)] += ALPHA*(reward + GAMMA*qa - q[(prev_state, action)])
+
+
+#定义一个执行 EPSILON贪婪策略并输出状态和 EPSILON值的函数。以均匀分布生成某一随机数，
+# 如果该值小于 EPSILON，则探索一种该状态下的不同行为， 或开发具有最大q值的行为：
+def epsilon_greedy_policy(state, EPSILON):
+    if random.uniform(0, 1) < EPSILON:
+        return env.action_space.sample()
+    else:
+        return max(list(range(env.action_space.n)), key= lambda x:q[( state, x)])
+
+# 对于每个环境
+for i in range(8000):
+    r = 0
+    # 首先初始化环境
+    prev_state = env.reset()
+    env.render()
+    while True:
+
+        action = epsilon_greedy_policy(prev_state,EPSILON)
+        nextstate, reward, done , _ = env.step(action)
+        update_q_table(prev_state, action, reward, nextstate, ALPHA, GAMMA)
+        prev_state = nextstate
+        r += reward
+        if done:
+            break
+    print("total reward",r)
+
+env.close()
